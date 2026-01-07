@@ -1,5 +1,15 @@
 """
-Multiclass softmax (multinomial logistic) regression.
+Softmax Regression
+==================
+
+Multinomial logistic regression (softmax) for multiclass classification
+with a minimal, NumPy-first implementation.
+
+Methods
+-------
+- `fit(X, y)`: optimize class-wise parameters via gradient ascent
+- `predict_proba(X)`: class probability distribution (softmax)
+- `predict(X)`: class labels via `argmax`
 """
 
 import numpy as np
@@ -9,8 +19,23 @@ __all__ = ["SoftmaxRegression"]
 
 
 class SoftmaxRegression(ProbabilisticModel):
-	"""
-	Multinomial logistic regression using softmax activation.
+	"""Multinomial logistic regression (softmax).
+
+	Parameters
+	----------
+	lr : float, default 0.01
+		Learning rate for optimization.
+	max_iter : int, default 1000
+		Maximum optimization iterations.
+	fit_intercept : bool, default True
+		Whether to include an intercept term.
+
+	Attributes
+	----------
+	coef_ : ndarray or None
+		Weight matrix of shape (n_classes, n_features).
+	intercept_ : ndarray or None
+		Intercept vector of shape (n_classes,).
 	"""
 
 	def __init__(self, lr: float = 0.01, max_iter: int = 1000, fit_intercept: bool = True) -> None:
@@ -37,6 +62,20 @@ class SoftmaxRegression(ProbabilisticModel):
 			return np.hstack([ones, X])
 		return X
 	def fit(self, X: np.ndarray, y: np.ndarray) -> "SoftmaxRegression":
+		"""Fit the softmax regression model.
+
+		Parameters
+		----------
+		X : ndarray, shape (n_samples, n_features)
+			Training inputs.
+		y : ndarray, shape (n_samples,)
+			Integer class labels in [0, K-1].
+
+		Returns
+		-------
+		self : SoftmaxRegression
+			Fitted estimator.
+		"""
 		X = self._add_intercept(X) if self.fit_intercept else X
 		B,n_features = X.shape
 		self.no_classes = len(np.unique(y))# count unique classes in y
@@ -55,8 +94,32 @@ class SoftmaxRegression(ProbabilisticModel):
 			self.intercept_ = np.zeros(self.no_classes)
 		return self
 	def predict_proba(self, X: np.ndarray) -> np.ndarray:
+		"""Predict class probability distribution via softmax.
+
+		Parameters
+		----------
+		X : ndarray, shape (n_samples, n_features)
+			Input samples.
+
+		Returns
+		-------
+		P : ndarray, shape (n_samples, n_classes)
+			Class probabilities per sample.
+		"""
 		X = self._add_intercept(X) if self.fit_intercept else X
 		return self._hypothesis(X)
 	def predict(self, X: np.ndarray) -> np.ndarray:
+		"""Predict class labels via maximum probability.
+
+		Parameters
+		----------
+		X : ndarray, shape (n_samples, n_features)
+			Input samples.
+
+		Returns
+		-------
+		y_pred : ndarray, shape (n_samples,)
+			Predicted class labels.
+		"""
 		probs = self.predict_proba(X)
 		return np.argmax(probs, axis=1)

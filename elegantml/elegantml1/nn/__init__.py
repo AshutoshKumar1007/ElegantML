@@ -13,7 +13,7 @@ Components:
 - losses: Loss functions (MSE, BinaryCrossEntropy, CrossEntropyLoss, etc.)
 """
 
-from elegantML.nn.layers import (
+from elegantml.nn.layers import (
     Variable,
     Linear,
     Sequential,
@@ -21,7 +21,7 @@ from elegantML.nn.layers import (
     Dropout
 )
 
-from elegantML.nn.activations import (
+from elegantml.nn.activations import (
     Activation,
     Tanh,
     Relu,
@@ -30,14 +30,14 @@ from elegantML.nn.activations import (
     Softmax
 )
 
-from elegantML.nn.optimizers import (
+from elegantml.nn.optimizers import (
     Optimizer,
     BGD,
     BGDwithMomentum,
     Adam
 )
 
-from elegantML.nn.losses import (
+from elegantml.nn.losses import (
     Loss,
     MSE_CostFunction,
     BinaryCrossEntropy,

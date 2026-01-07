@@ -1,5 +1,15 @@
 """
-Logistic Regression (binary classification).
+Logistic Regression
+===================
+
+Binary logistic regression with a minimal gradient-descent optimizer
+and a clean, NumPy-first API.
+
+Methods
+-------
+- `fit(X, y)`: optimize parameters by gradient descent
+- `predict_proba(X)`: sigmoid probabilities
+- `predict(X)`: binary labels via 0.5 threshold
 """
 
 import numpy as np
@@ -9,8 +19,7 @@ __all__ = ["LogisticRegression"]
 
 
 class LogisticRegression(ProbabilisticModel):
-	"""
-	Binary logistic regression with gradient-descent optimizer.
+	"""Binary logistic regression estimator.
 
 	Parameters
 	----------
@@ -20,6 +29,15 @@ class LogisticRegression(ProbabilisticModel):
 		Maximum optimization iterations.
 	fit_intercept : bool, default True
 		Whether to include an intercept term.
+	eps : float, default 1e-15
+		Numerical stability constant for log-likelihood.
+
+	Attributes
+	----------
+	coef_ : ndarray or None
+		Coefficient vector of shape (n_features,) (or including intercept during optimization).
+	intercept_ : float
+		Intercept term.
 	"""
 
 	def __init__(self, lr: float = 0.01, max_iter: int = 1000, fit_intercept: bool = True, eps : float = 1e-15) -> None:
@@ -47,6 +65,20 @@ class LogisticRegression(ProbabilisticModel):
 		return X
 
 	def fit(self, X: np.ndarray, y: np.ndarray) -> "LogisticRegression":
+		"""Fit the logistic regression model by gradient descent.
+
+		Parameters
+		----------
+		X : ndarray, shape (n_samples, n_features)
+			Training inputs.
+		y : ndarray, shape (n_samples,)
+			Binary targets in {0,1}.
+
+		Returns
+		-------
+		self : LogisticRegression
+			Fitted estimator.
+		"""
 		X = self._add_intercept(X) if self.fit_intercept else X
 		B,n_features = X.shape
 		self.coef_ = np.random.rand(n_features)
@@ -63,9 +95,33 @@ class LogisticRegression(ProbabilisticModel):
 			self.coef_ = self.coef_
 		return self
 	def predict_proba(self, X: np.ndarray) -> np.ndarray:
+		"""Predict class probabilities via the sigmoid function.
+
+		Parameters
+		----------
+		X : ndarray, shape (n_samples, n_features)
+			Input samples.
+
+		Returns
+		-------
+		P : ndarray, shape (n_samples,)
+			Probability of the positive class.
+		"""
 		X = self._add_intercept(X) if self.fit_intercept else X
 		return self._hypothesis(X)
 
 	def predict(self, X: np.ndarray) -> np.ndarray:
+		"""Predict binary class labels using a 0.5 threshold.
+
+		Parameters
+		----------
+		X : ndarray, shape (n_samples, n_features)
+			Input samples.
+
+		Returns
+		-------
+		y_pred : ndarray, shape (n_samples,)
+			Predicted class labels in {0,1}.
+		"""
 		probs = self.predict_proba(X)
 		return (probs >= 0.5).astype(int)

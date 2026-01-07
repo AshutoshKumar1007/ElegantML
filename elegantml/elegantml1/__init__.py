@@ -8,9 +8,8 @@ and mathematically grounded implementations of classical ML and neural networks.
 Submodules:
 -----------
 - nn: Neural network components (layers, activations, optimizers, losses)
-- linear_models: Classical linear models (Linear Regression, Logistic Regression, etc.)
-- tree: Decision trees and ensemble methods
-- clustering: Clustering algorithms (K-Means, DBSCAN, etc.)
+- ml: Classical ML algorithms (regression, classification, probabilistic models)
+- clustering: Clustering algorithms (K-Means etc.)
 - preprocessing: Data preprocessing utilities
 - metrics: Model evaluation metrics
 """
@@ -18,16 +17,20 @@ Submodules:
 __version__ = "0.1.0"
 __author__ = "ElegantML Contributors"
 
-# Submodules are available via: from elegantML import ml, nn
+# Submodules are available via: from elegantML import ml, nn etc.
 # Or: from elegantML.nn import Linear, etc.
 
-from elegantML import ml  # classical ML algorithms
-from elegantML import nn  # neural network components
-from elegantML import clustering  # clustering algorithms
+from elegantml import ml  # classical ML algorithms
+from elegantml import nn  # neural network components
+from elegantml import clustering  # clustering algorithms
+from elegantml import preprocessing  # data preprocessing utilities
+from elegantml import metrics  # model evaluation metrics
 
 __all__ = [
     "__version__",
     "ml",
     "nn",
     "clustering",
+    "preprocessing",
+    "metrics",
 ]

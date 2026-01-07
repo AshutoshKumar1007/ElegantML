@@ -1,9 +1,16 @@
 """
-Gaussian Discriminant Analysis (skeleton).
+Gaussian Discriminant Analysis
+==============================
 
-Provides an interface-compatible placeholder for GDA so callers can
-`import GaussianDiscriminantAnalysis` from `elegantML.ml`. Implementation
-can be added later without changing public imports.
+NumPy-based Gaussian Discriminant Analysis (GDA) estimator with a
+readable API. Implements class-conditional Gaussian densities and
+posterior inference for classification.
+
+Methods
+-------
+- `fit(X, y)`: estimate class priors, means, and covariances
+- `predict_proba(X)`: posterior class probabilities
+- `predict(X)`: class labels via `argmax` on posterior
 """
 
 import numpy as np
@@ -13,7 +20,17 @@ __all__ = ["GaussianDiscriminantAnalysis"]
 
 
 class GaussianDiscriminantAnalysis(ProbabilisticModel):
-    """Gaussian Discriminant Analysis."""
+    """Gaussian Discriminant Analysis estimator.
+
+    Attributes
+    ----------
+    phi : ndarray or None
+        Class prior probabilities of shape (K,).
+    mu : ndarray or None
+        Class means of shape (K, n_features).
+    sigma : ndarray or None
+        Class covariance matrices of shape (K, n_features, n_features).
+    """
 
     def __init__(self) -> None:
         # Placeholder for any future hyperparameters
@@ -35,6 +52,20 @@ class GaussianDiscriminantAnalysis(ProbabilisticModel):
         posterior = raw_posterior / np.sum(raw_posterior, axis=1, keepdims=True)
         return posterior 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "GaussianDiscriminantAnalysis":
+        """Estimate GDA parameters from labeled data.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_samples, n_features)
+            Training inputs.
+        y : ndarray, shape (n_samples,)
+            Integer class labels in [0, K-1].
+
+        Returns
+        -------
+        self : GaussianDiscriminantAnalysis
+            Fitted estimator.
+        """
         B, n_features = X.shape
         self.no_classes = len(np.unique(y))
         indicator = np.eye(self.no_classes)[y]  # shape: (B,K)
@@ -52,8 +83,32 @@ class GaussianDiscriminantAnalysis(ProbabilisticModel):
             self.sigma[c] = 0.5 * (sigma_c + sigma_c.T)  # to ensure symmetry
         return self
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        """Posterior class probabilities for inputs.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_samples, n_features)
+            Inputs to evaluate.
+
+        Returns
+        -------
+        P : ndarray, shape (n_samples, K)
+            Class posterior probabilities per sample.
+        """
         return self._hypothesis(X)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predict class labels via maximum posterior probability.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_samples, n_features)
+            Inputs to classify.
+
+        Returns
+        -------
+        y_pred : ndarray, shape (n_samples,)
+            Predicted class labels.
+        """
         probs = self.predict_proba(X)
-        return np.argmax(probs, axis=1) #argmax is zero indexed
+        return np.argmax(probs, axis=1)

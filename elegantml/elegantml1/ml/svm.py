@@ -1,5 +1,15 @@
 """
-Support Vector Machine (linear kernel placeholder).
+Support Vector Machines
+======================
+
+Minimal, NumPy-first implementations for Support Vector Classification (SVC)
+and Support Vector Regression (SVR) with selectable kernels.
+
+Methods
+-------
+- `fit(X, y)`: train SVM via SMO-style updates (SVC) or dual optimization (SVR)
+- `predict(X)`: predictions for inputs (SVC: labels; SVR: values)
+- `get_support_vectors()`: access learned support vectors
 """
 
 import numpy as np
@@ -9,8 +19,31 @@ __all__ = ["SupportVectorClassifier", "SupportVectorRegressor"]
 
 
 class SupportVectorClassifier(BaseModel):
-    """
-    Linear SVM with hinge loss (implementation pending).
+    """Support Vector Classifier (SVC).
+
+    Parameters
+    ----------
+    C : float, default 1.0
+        Regularization parameter.
+    kernel_type : {"linear", "quadratic", "rbf"}, default "linear"
+        Kernel to use.
+    lr : float, default 0.01
+        Learning rate (if applicable).
+    max_iter : int, default 1000
+        Maximum iterations.
+    eps : float, default 1e-5
+        Convergence tolerance and support vector threshold.
+
+    Attributes
+    ----------
+    alpha : ndarray or None
+        Dual variables.
+    support_vectors_ : ndarray or None
+        Support vectors.
+    b : float
+        Bias term.
+    X_train, Y_train : ndarray or None
+        Cached training data.
     """
 
     def __init__(self, C: float = 1.0, kernel_type: str = "linear", lr: float = 0.01, max_iter: int = 1000, eps: float = 1e-5) -> None:
@@ -50,16 +83,7 @@ class SupportVectorClassifier(BaseModel):
         """
         diff = X1 - X2
         return np.exp(-gamma *np.dot(diff, diff.T))
-    def _compute_L_H(self,C,alphai,alphaj,y_i,y_j):
-        """ Compute the L and H bounds for alpha_j. 
-        """
-        if y_i != y_j:
-            L = max(0, alphaj - alphai)
-            H = min(C, C + alphaj - alphai) # is it correct?
-        else:
-            L = max(0, alphai + alphaj - C)
-            H = min(C, alphai + alphaj)
-        return L,H
+    
     def calc_b(self):
         """ Calculate bias term b. """
         y_support = self.Y_train[self.alpha > self.eps]
@@ -68,15 +92,34 @@ class SupportVectorClassifier(BaseModel):
         return b
         
     def hypothesis(self,X: np.ndarray) -> np.ndarray:
-        """ Predict function for SVC. 
-        X : shape (n_samples, n_features)
-        return : shape (n_samples,)
+        """Decision function for SVC.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_samples, n_features)
+            Input samples.
+
+        Returns
+        -------
+        scores : ndarray, shape (n_samples,)
+            Signed distances from the decision boundary.
         """
         k_test = self.kernel(X,self.X_train)
         return np.sum(self.alpha * self.Y_train * k_test, axis = 1) + self.b
     def fit(self, X: np.ndarray, y: np.ndarray) -> "SupportVectorClassifier":
-        """
-        Fit SVM model using SMO algorithm.
+        """Fit the SVC using an SMO-style optimization.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_samples, n_features)
+            Training inputs.
+        y : ndarray, shape (n_samples,)
+            Binary labels in {+1, -1}.
+
+        Returns
+        -------
+        self : SupportVectorClassifier
+            Fitted estimator.
         """ 
         self.X_train = X
         self.Y_train = y
@@ -94,7 +137,13 @@ class SupportVectorClassifier(BaseModel):
                 if kij == 0:
                     continue
                 alphaj_old,alphai_old = self.alpha[j], self.alpha[i]
-                L,H = self._compute_L_H(self.C,alphai_old,alphaj_old,y[i],y[j])
+                if y[i] != y[j]:
+                    L = max(0, alphaj_old - alphai_old)
+                    H = min(self.C, self.C + alphaj_old - alphai_old) # is it correct?
+                else:
+                    L = max(0, alphai_old + alphaj_old - self.C)
+                    H = min(self.C, alphai_old + alphaj_old)
+                # L,H = self._compute_L_H(self.C,alphai_old,alphaj_old,y[i],y[j])
                 self.b = self.calc_b()
                 # calculate E_i, E_j
                 E_i = self.hypothesis(X[i]) - y[i]
@@ -114,11 +163,30 @@ class SupportVectorClassifier(BaseModel):
         self.b = self.calc_b()     
         return self
     def get_support_vectors(self) -> np.ndarray:
+        """Return support vectors for the trained SVC.
+
+        Returns
+        -------
+        SV : ndarray, shape (n_support, n_features)
+            Support vectors.
+        """
         if self.alpha is None or self.X_train is None:
             raise RuntimeError("Model is not fitted; call fit() first.")
         idx = np.where(self.alpha > self.eps)[0]
         return self.X_train[idx]
     def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predict binary class labels using the decision function sign.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_samples, n_features)
+            Input samples.
+
+        Returns
+        -------
+        y_pred : ndarray, shape (n_samples,)
+            Predicted labels in {+1, -1}.
+        """
         if self.w is None:
             raise RuntimeError("Model is not fitted; call fit() first.")
         scores = self.hypothesis(X.T)
@@ -126,8 +194,29 @@ class SupportVectorClassifier(BaseModel):
 
 
 class SupportVectorRegressor(BaseModel):
-    """
-    Support Vector Regression.
+    """Support Vector Regression (SVR).
+
+    Parameters
+    ----------
+    C : float, default 1.0
+        Regularization parameter.
+    epsilon : float, default 0.1
+        Epsilon-insensitive tube width.
+    kernel_type : {"linear", "quadratic", "rbf"}, default "linear"
+        Kernel to use.
+    max_iter : int, default 1000
+        Maximum iterations.
+    tol : float, default 1e-4
+        Numerical tolerance.
+
+    Attributes
+    ----------
+    alpha, alpha_star : ndarray or None
+        Dual variables.
+    b : float
+        Bias term.
+    X_train, Y_train : ndarray or None
+        Cached training data.
     """
 
     def __init__(self,C : float = 1.0, epsilon: float = 0.1,kernel_type: str = "linear", max_iter: int = 1000,tol: float = 1e-4) -> None:
@@ -162,14 +251,22 @@ class SupportVectorRegressor(BaseModel):
         sq_dists = np.sum(X1**2, axis=1).reshape(-1, 1) + np.sum(X2**2, axis=1) - 2 * np.dot(X1, X2.T)
         return np.exp(-gamma * sq_dists)
     def hypothesis(self,X : np.ndarray)-> np.ndarray:
-        """ Predict function for SVR.
-        X : shape (n_samples, n_features)
-        return : shape (n_samples,) 
+        """Decision function for SVR.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_samples, n_features)
+            Input samples.
+
+        Returns
+        -------
+        y : ndarray, shape (n_samples,)
+            Predicted values.
         """
         ktest = self.kernel(X,self.X_train)
         return np.sum((self.alpha_star - self.alpha)* self.Y_train * ktest, axis = 1) + self.b
     def calc_b(self):
-        """ Calculate bias term b. """
+        """Compute the SVR bias term `b` using boundary support vectors."""
         bndr_sv_mask  = ((self.alpha > self.tol) & (self.alpha < self.C - self.tol) |
                          (self.alpha_star > self.tol) & (self.alpha_star < self.C - self.tol))
         X_bndr = self.X_train[bndr_sv_mask]
@@ -183,6 +280,20 @@ class SupportVectorRegressor(BaseModel):
         return b
         
     def fit(self, X: np.ndarray, y: np.ndarray) -> "SupportVectorRegressor":
+        """Fit the SVR model via dual optimization.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_samples, n_features)
+            Training inputs.
+        y : ndarray, shape (n_samples,)
+            Target values.
+
+        Returns
+        -------
+        self : SupportVectorRegressor
+            Fitted estimator.
+        """
         n,d = X.shape
         # compute Kernel matrix
         self._K = self._linear_kernel(X, X)
@@ -231,10 +342,21 @@ class SupportVectorRegressor(BaseModel):
         self.alpha_star = beta[n:]
         self.sv_mask = (self.alpha > self.eps) | (self.alpha_star > self.eps)
         self.b = self.calc_b()
+        return self
         #update b here if needed
     def get_support_vectors(self) -> np.ndarray:
         if self.alpha is None or self.alpha_star is None or self.X_train is None:
             raise RuntimeError("Model is not fitted; call fit() first.")
         return self.X_train[self.sv_mask]
     def predict(self, X: np.ndarray) -> np.ndarray:
-        raise NotImplementedError("SVR.predict is pending implementation.")
+        """Predict target values for inputs using the SVR model.
+        Parameters
+        ----------
+        X : ndarray, shape (n_samples, n_features)
+            Input samples.
+        Returns
+        -------
+        y_pred : ndarray, shape (n_samples,)
+            Predicted target values.
+        """
+        return self.hypothesis(X)
